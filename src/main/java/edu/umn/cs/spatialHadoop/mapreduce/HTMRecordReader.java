@@ -226,6 +226,8 @@ public class HTMRecordReader<V extends Shape> extends
         // Match with the query
         if (inputQueryRange != null && (shape == null ))
             return false;
+        if (inputQueryRange == null)
+            return true;
         long id = ((HTMPoint)shape).HTMid;
         return inputQueryRange.contains(new HTMid(id));
     }
