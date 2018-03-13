@@ -60,6 +60,8 @@ public class SpatialInputFormat3<K extends Rectangle, V extends Shape>
      */
     public static final String InputQueryRange = "rect";
 
+    public static boolean isHTM = false;
+
     /**
      * Allows multiple splits to be combined to reduce number of mappers
      */
@@ -103,7 +105,7 @@ public class SpatialInputFormat3<K extends Rectangle, V extends Shape>
             return (RecordReader) new RTreeRecordReader3<V>();
         }
 
-        if (context.getConfiguration().get("ranges") != null) {
+        if (isHTM) {
             return (RecordReader) new HTMRecordReader<V>();
         }
 
@@ -208,7 +210,7 @@ public class SpatialInputFormat3<K extends Rectangle, V extends Shape>
         try {
             Configuration jobConf = job.getConfiguration();
 
-            if (jobConf.get("ranges") != null) {
+            if (isHTM) {
                 HTMFilter htmFilter = new HTMFilter(OperationsParams.getRanges(jobConf, "ranges"));
 
                 // Filter files based on user specified filter function
