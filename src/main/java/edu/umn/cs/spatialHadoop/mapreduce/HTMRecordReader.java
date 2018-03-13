@@ -10,11 +10,13 @@ package edu.umn.cs.spatialHadoop.mapreduce;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import cn.edu.tsinghua.cs.htm.utils.HTMRanges;
 import cn.edu.tsinghua.cs.htm.utils.HTMid;
+import cn.edu.tsinghua.cs.htm.utils.Pair;
 import edu.umn.cs.spatialHadoop.core.HTMPoint;
 import edu.umn.cs.spatialHadoop.indexing.PartitionHTM;
 import org.apache.commons.logging.Log;
@@ -92,6 +94,8 @@ public class HTMRecordReader<V extends Shape> extends
     private Text tempLine;
 
     private HTMRanges inputQueryRange;
+
+    private List<Pair<Long, Long> > pairList;
 
     private CompressionCodecFactory compressionCodecFactory;
 
@@ -229,7 +233,25 @@ public class HTMRecordReader<V extends Shape> extends
         if (inputQueryRange == null)
             return true;
         long id = ((HTMPoint)shape).HTMid;
-        return inputQueryRange.contains(new HTMid(id));
+        if (this.pairList == null) {
+            extendRanges(new HTMid(id).getLevel());
+        }
+        for (Pair<Long, Long> pair : this.pairList) {
+            if (pair.a <= id && id <= pair.b) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected void extendRanges(int level) {
+        this.pairList = new ArrayList<Pair<Long, Long>>();
+        List<Pair<HTMid, HTMid> > pairList = inputQueryRange.getPairList();
+        for (Pair<HTMid, HTMid> pair : pairList) {
+            long lb = pair.a.extend(level).a.getId();
+            long hb = pair.b.extend(level).b.getId();
+            this.pairList.add(new Pair<Long, Long>(lb, hb));
+        }
     }
 
     /**
