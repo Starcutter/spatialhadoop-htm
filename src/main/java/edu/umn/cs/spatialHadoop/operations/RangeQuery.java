@@ -80,8 +80,6 @@ public class RangeQuery {
         if (params.get("rect") != null) {
             // Use the built-in range filter of the input format
             params.set(SpatialInputFormat3.InputQueryRange, params.get("rect"));
-        } else if (params.get("ranges") != null) {
-            SpatialInputFormat3.isHTM = true;
         }
         // Use multithreading in case it is running locally
         params.setInt(LocalJobRunner.LOCAL_MAX_MAPS, Runtime.getRuntime().availableProcessors());
