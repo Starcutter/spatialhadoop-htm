@@ -121,6 +121,8 @@ public class Repartition {
          */
         private HTMidInfo[] htmIdInfos;
 
+        private int indexLevel = 0, pointLevel = -1;
+
         /**
          * Used to output intermediate records
          */
@@ -130,6 +132,7 @@ public class Repartition {
         public void configure(JobConf job) {
             try {
                 htmIdInfos = SpatialSite.getHTMids(job);
+                indexLevel = htmIdInfos[0].htmId.getLevel();
                 super.configure(job);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -139,14 +142,15 @@ public class Repartition {
         public void map(Rectangle cellMbr, HTMPoint point,
                         OutputCollector<IntWritable, HTMPoint> output, Reporter reporter)
                 throws IOException {
+            if (pointLevel < 0) {
+                pointLevel = new HTMid(point.HTMid).getLevel();
+            }
+            long truncated = point.HTMid >> 2 * (pointLevel - indexLevel);
             for (int i = 0; i < htmIdInfos.length; i++) {
-                HTMid htmId = new HTMid(point.HTMid);
-                List<Pair<HTMid, HTMid> > pairList = new ArrayList<Pair<HTMid, HTMid>>();
-                pairList.add(htmIdInfos[i].htmId.extend(htmId.getLevel()));
-                HTMRanges range = new HTMRanges(pairList);
-                if (range.contains(htmId)) {
+                if (htmIdInfos[i].htmId.getId() == truncated) {
                     hidIndex.set(i);
                     output.collect(hidIndex, point);
+                    break;
                 }
             }
         }
