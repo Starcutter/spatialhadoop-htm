@@ -29,7 +29,7 @@ public class CellInfo extends Rectangle {
   
   /**
    * A unique ID for this cell in a file. This must be set initially when
-   * htmIdInfos for a file are created. It cannot be guessed from cell dimensions.
+   * cells for a file are created. It cannot be guessed from cell dimensions.
    */
   public int cellId;
 

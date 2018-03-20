@@ -87,7 +87,7 @@ public class GridRecordWriter<S extends Shape> implements ShapeRecordWriter<S> {
   /**An output stream to the master file*/
   protected OutputStream masterFile;
   
-  /**A list of threads closing htmIdInfos in background*/
+  /**A list of threads closing cells in background*/
   protected ArrayList<Thread> closingThreads;
   
   /**
@@ -199,7 +199,7 @@ public class GridRecordWriter<S extends Shape> implements ShapeRecordWriter<S> {
       for (CellInfo cell : cells)
         this.cells[(int) cell.cellId] = cell;
       
-      // Prepare arrays that hold htmIdInfos information
+      // Prepare arrays that hold cells information
       intermediateCellStreams = new OutputStream[this.cells.length];
       intermediateCellPath = new Path[this.cells.length];
       cellsMbr = new Rectangle[this.cells.length];
@@ -251,10 +251,10 @@ public class GridRecordWriter<S extends Shape> implements ShapeRecordWriter<S> {
   @Override
   public synchronized void write(NullWritable dummy, S shape) throws IOException {
     if (cells == null) {
-      // No htmIdInfos. Write to the only stream open to this file
+      // No cells. Write to the only stream open to this file
       writeInternal(0, shape);
     } else {
-      // Check which htmIdInfos should contain the given shape
+      // Check which cells should contain the given shape
       Rectangle mbr = shape.getMBR();
       for (int cellIndex = 0; cellIndex < cells.length; cellIndex++) {
         if (cells[cellIndex] != null && mbr.isIntersected(cells[cellIndex])) {
@@ -265,9 +265,9 @@ public class GridRecordWriter<S extends Shape> implements ShapeRecordWriter<S> {
   }
 
   /**
-   * Write the given shape to a specific cell. The shape is not replicated to any other htmIdInfos.
+   * Write the given shape to a specific cell. The shape is not replicated to any other cells.
    * It's just written to the given cell. This is useful when shapes are already assigned
-   * and replicated to grid htmIdInfos another way, e.g. from a map phase that partitions.
+   * and replicated to grid cells another way, e.g. from a map phase that partitions.
    * @param cellInfo
    * @param shape
    * @throws IOException

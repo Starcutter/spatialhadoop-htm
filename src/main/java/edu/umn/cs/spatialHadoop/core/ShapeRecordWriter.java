@@ -15,7 +15,7 @@ import org.apache.hadoop.util.Progressable;
 
 public interface ShapeRecordWriter<S extends Shape> {
   /**
-   * Writes the given shape to the file to all htmIdInfos it overlaps with
+   * Writes the given shape to the file to all cells it overlaps with
    * @param dummy A null key that is never used
    * @param shape The shape to write to the output
    * @throws IOException
@@ -31,7 +31,7 @@ public interface ShapeRecordWriter<S extends Shape> {
   
   /**
    * Writes the given shape only to the given cell even if it overlaps
-   * with other htmIdInfos. This is used when the output is prepared to write
+   * with other cells. This is used when the output is prepared to write
    * only one cell. The caller ensures that another call will write the object
    * to the other cell(s) later.
    * @param cellInfo

@@ -288,7 +288,7 @@ public class AdaptiveMultilevelPlot {
                             context.write(outKey, shape);
                         }
                     }
-                    // Shrink overlapping htmIdInfos to match the upper level
+                    // Shrink overlapping cells to match the upper level
                     int updatedX1 = overlappingCells.x >> maxLevelsPerReducer;
                     int updatedY1 = overlappingCells.y >> maxLevelsPerReducer;
                     int updatedX2 = (overlappingCells.x + overlappingCells.width - 1) >> maxLevelsPerReducer;
@@ -402,7 +402,7 @@ public class AdaptiveMultilevelPlot {
                 if (shapeMBR == null)
                     continue;
                 java.awt.Rectangle overlappingCells = bottomGrid.getOverlappingCells(shapeMBR);
-                // Shift overlapping htmIdInfos to be in the full pyramid rather than
+                // Shift overlapping cells to be in the full pyramid rather than
                 // the sub-pyramid rooted at tileID
                 overlappingCells.x += tileOffsetX;
                 overlappingCells.y += tileOffsetY;

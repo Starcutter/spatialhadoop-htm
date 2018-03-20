@@ -94,7 +94,7 @@ public class DwyersAlgorithm extends GSDTAlgorithm {
 
     // Dwyer's algorithm runs in three phases.
     // Phase I: Apply Guibas and Stolfi's algorithm in each cell
-    // Phase II: Merge answers horizontally in all htmIdInfos in each row
+    // Phase II: Merge answers horizontally in all cells in each row
     // Phase III: Merge answers vertically in all rows
     List<IntermediateTriangulation> partialAnswers = new ArrayList<IntermediateTriangulation>();
 

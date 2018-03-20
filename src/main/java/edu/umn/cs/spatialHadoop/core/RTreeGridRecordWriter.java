@@ -42,7 +42,7 @@ public class RTreeGridRecordWriter<S extends Shape> extends GridRecordWriter<S> 
    * @param outDir Output path for the job
    * @param job The corresponding job
    * @param prefix A prefix to use for output files for uniqueness
-   * @param cells The htmIdInfos used to partition the written shapes
+   * @param cells The cells used to partition the written shapes
    * @throws IOException
    */
   public RTreeGridRecordWriter(Path outDir, JobConf job, String prefix,
