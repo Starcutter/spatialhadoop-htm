@@ -176,7 +176,7 @@ public abstract class SpatialInputFormat<K, V> extends FileInputFormat<K, V> {
         listStatus(fs, dir, result, blockFilter);
       }
       
-      LOG.info("Spatial filter function matched with "+result.size()+" htmIdInfos");
+      LOG.info("Spatial filter function matched with "+result.size()+" cells");
       
       return result.toArray(new FileStatus[result.size()]);
     } catch (InstantiationException e) {

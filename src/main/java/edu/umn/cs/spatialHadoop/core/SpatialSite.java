@@ -478,7 +478,7 @@ public class SpatialSite {
     }
 
     /**
-     * Returns the htmIdInfos (partitions) of a file. This functionality can be useful
+     * Returns the cells (partitions) of a file. This functionality can be useful
      * to repartition another file using the same partitioning or to draw
      * these partitions as a high level index. This function reads the master
      * file and returns all rectangles in it.
@@ -496,12 +496,12 @@ public class SpatialSite {
     }
 
     /**
-     * Set an array of htmIdInfos in the job configuration. As the array might be
+     * Set an array of cells in the job configuration. As the array might be
      * very large to store as one value, an alternative approach is used.
-     * The htmIdInfos are all written to a temporary file, and that file is added
+     * The cells are all written to a temporary file, and that file is added
      * to the DistributedCache of the job. Later on, a call to
      * {@link #getCells(Configuration)} will open the corresponding file from
-     * DistributedCache and parse htmIdInfos from that file.
+     * DistributedCache and parse cells from that file.
      *
      * @param conf
      * @param cellsInfo
@@ -511,7 +511,7 @@ public class SpatialSite {
         Path tempFile;
         FileSystem fs = FileSystem.get(conf);
         do {
-            tempFile = new Path("cells_" + (int) (Math.random() * 1000000) + ".htmIdInfos");
+            tempFile = new Path("cells_" + (int) (Math.random() * 1000000) + ".cells");
         } while (fs.exists(tempFile));
         FSDataOutputStream out = fs.create(tempFile);
         out.writeInt(cellsInfo.length);
@@ -524,11 +524,11 @@ public class SpatialSite {
 
         DistributedCache.addCacheFile(tempFile.toUri(), conf);
         conf.set(OUTPUT_CELLS, tempFile.getName());
-        LOG.info("Partitioning file into " + cellsInfo.length + " htmIdInfos");
+        LOG.info("Partitioning file into " + cellsInfo.length + " cells");
     }
 
     /**
-     * Retrieves htmIdInfos that were stored earlier using
+     * Retrieves cells that were stored earlier using
      * {@link #setCells(Configuration, CellInfo[])}
      * This function opens the corresponding
      * file from DistributedCache and parses jobs from it.

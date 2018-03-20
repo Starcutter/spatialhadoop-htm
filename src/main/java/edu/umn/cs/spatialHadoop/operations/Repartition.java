@@ -70,7 +70,7 @@ public class Repartition {
     public static class RepartitionMap<T extends Shape> extends MapReduceBase
             implements Mapper<Rectangle, T, IntWritable, T> {
         /**
-         * List of htmIdInfos used by the mapper
+         * List of cells used by the mapper
          */
         private CellInfo[] cellInfos;
 
@@ -117,7 +117,7 @@ public class Repartition {
     public static class RepartitionMapHTM extends MapReduceBase
             implements Mapper<Rectangle, HTMPoint, IntWritable, HTMPoint> {
         /**
-         * List of htmIdInfos used by the mapper
+         * List of cells used by the mapper
          */
         private HTMidInfo[] htmIdInfos;
 
@@ -164,7 +164,7 @@ public class Repartition {
     public static class RepartitionMapNoReplication<T extends Shape> extends MapReduceBase
             implements Mapper<Rectangle, T, IntWritable, T> {
         /**
-         * List of htmIdInfos used by the mapper
+         * List of cells used by the mapper
          */
         private CellInfo[] cellInfos;
 
@@ -179,7 +179,7 @@ public class Repartition {
                 cellInfos = SpatialSite.getCells(job);
                 super.configure(job);
             } catch (IOException e) {
-                throw new RuntimeException("Error loading htmIdInfos", e);
+                throw new RuntimeException("Error loading cells", e);
             }
         }
 
@@ -328,7 +328,7 @@ public class Repartition {
 
     /**
      * Repartitions a file that is already in HDFS. It runs a MapReduce job
-     * that partitions the file into htmIdInfos, and writes each cell separately.
+     * that partitions the file into cells, and writes each cell separately.
      *
      * @param inFile     The input raw file that needs to be indexed.
      * @param outPath    The output path where the index will be written.
@@ -477,13 +477,13 @@ public class Repartition {
     }
 
     /**
-     * Repartitions an input file according to the given list of htmIdInfos.
+     * Repartitions an input file according to the given list of cells.
      *
      * @param inFile     The input raw file that needs to be indexed.
      * @param outPath    The output path where the index will be written.
      * @param stockShape An instance of the shapes stored in the input file.
      * @param blockSize  The block size for the constructed index.
-     * @param cellInfos  A predefined set of htmIdInfos to use as a global index
+     * @param cellInfos  A predefined set of cells to use as a global index
      * @param sindex     The type of index to build.
      * @param overwrite  Whether to overwrite the output or not.
      * @throws IOException If an exception happens while preparing the job.
@@ -695,7 +695,7 @@ public class Repartition {
      * @param out        The output path where the index will be written.
      * @param stockShape An instance of the shapes stored in the input file.
      * @param blockSize  The block size for the constructed index.
-     * @param cells      A predefined set of htmIdInfos to use as a global index
+     * @param cells      A predefined set of cells to use as a global index
      * @param sindex     The type of index to build.
      * @param overwrite  Whether to overwrite the output or not.
      * @throws IOException If an exception happens while preparing the job.
@@ -790,7 +790,7 @@ public class Repartition {
      * Entry point to the operation.
      * shape:&lt;s&gt; the shape to use. Automatically inferred from input file if not set.
      * sindex&lt;index&gt; Type of spatial index to build
-     * htmIdInfos-of:&lt;filename&gt; Use the htmIdInfos of the given file for the global index.
+     * cells-of:&lt;filename&gt; Use the cells of the given file for the global index.
      * blocksize:&lt;size&gt; Size of each block in indexed file in bytes.
      * -local: If set, the index is built on the local machine.
      * input filename: Input file in HDFS

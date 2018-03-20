@@ -83,7 +83,7 @@ public class SpatioAggregateQueries {
     double tmp = spatialRange.y2;
     spatialRange.y2 = spatialRange.y1;
     spatialRange.y1 = tmp;
-    // Find the range of htmIdInfos in MODIS Sinusoidal grid overlapping the range
+    // Find the range of cells in MODIS Sinusoidal grid overlapping the range
     final int h1 = (int) Math.floor(spatialRange.x1);
     final int h2 = (int) Math.ceil(spatialRange.x2);
     final int v1 = (int) Math.floor(spatialRange.y1);

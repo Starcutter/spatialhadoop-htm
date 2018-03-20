@@ -579,7 +579,7 @@ public class DistributedJoin {
 					+ ".repartitioned_" + (int) (Math.random() * 1000000));
 		} while (fs.exists(partitioned_file));
 
-		// Get the htmIdInfos to use for repartitioning
+		// Get the cells to use for repartitioning
 		GlobalIndex<Partition> gindex = SpatialSite.getGlobalIndex(fs,
 				files[1 - file_to_repartition]);
 		CellInfo[] cells = SpatialSite.cellsOf(fs,
@@ -602,7 +602,7 @@ public class DistributedJoin {
 		params.set("sindex", sindex);
 
 		if (isGeneralRepartitionMode) {
-			// Repartition the smaller file with heuristics htmIdInfos info (general
+			// Repartition the smaller file with heuristics cells info (general
 			// indexing)
 			Repartition.repartitionMapReduce(files[file_to_repartition],
 					partitioned_file, null, params);
@@ -911,7 +911,7 @@ public class DistributedJoin {
 		LOG.info("Repartition - Joining " + inputFiles[0] + " X "
 				+ inputFiles[1]);
 
-		// Get the htmIdInfos to use for repartitioning
+		// Get the cells to use for repartitioning
 		GlobalIndex<Partition> gindex = SpatialSite.getGlobalIndex(fs,
 				inputFiles[1 - fileToRepartition]);
 		OperationsParams.setRepartitionJoinIndexPath(repartitionJoinJob,

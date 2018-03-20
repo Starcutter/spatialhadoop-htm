@@ -21,7 +21,7 @@ import edu.umn.cs.spatialHadoop.core.Shape;
 /**
  * A record writer that can be used in MapReduce programs to write an index
  * file where the key is the cell ID and the value is the shape to write to
- * that cell. A given shape is not implicitly replicated to any other htmIdInfos
+ * that cell. A given shape is not implicitly replicated to any other cells
  * other than the one provided.
  * 
  * @author Ahmed Eldawy

@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
+import cn.edu.tsinghua.cs.htm.utils.HTMid;
 import edu.umn.cs.spatialHadoop.indexing.PartitionHTM;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -56,6 +57,9 @@ public class HTMRecordWriter {
     /**The spatial boundaries for each cell*/
     protected HTMidInfo[] htmIdInfos;
 
+    private int indexLevel;
+    private int pointLevel;
+
     /**Paths of intermediate files*/
     protected Path[] intermediateCellPath;
 
@@ -83,7 +87,7 @@ public class HTMRecordWriter {
     /**An output stream to the master file*/
     protected OutputStream masterFile;
 
-    /**A list of threads closing htmIdInfos in background*/
+    /**A list of threads closing cells in background*/
     protected ArrayList<Thread> closingThreads;
 
     /**
@@ -151,7 +155,9 @@ public class HTMRecordWriter {
 
             this.htmIdInfos = htmIdInfos;
 
-            // Prepare arrays that hold htmIdInfos information
+            this.indexLevel = htmIdInfos[0].htmId.getLevel();
+
+            // Prepare arrays that hold cells information
             intermediateCellStreams = new OutputStream[this.htmIdInfos.length];
             intermediateCellPath = new Path[this.htmIdInfos.length];
             // Initialize the counters for each cell
@@ -164,6 +170,8 @@ public class HTMRecordWriter {
             intermediateCellSize = new int[1];
             intermediateCellRecordCount = new int[1];
         }
+
+        this.pointLevel = -1;
 
         this.blockSize = fileSystem.getDefaultBlockSize(outDir);
 
@@ -192,6 +200,23 @@ public class HTMRecordWriter {
 
     public void setStockObject(HTMPoint stockObject) {
         this.stockObject = stockObject;
+    }
+
+    public synchronized void write(NullWritable dummy, HTMPoint shape) throws IOException {
+        if (htmIdInfos == null) {
+            writeInternal(0, shape);
+        } else {
+            if (pointLevel < 0) {
+                pointLevel = new HTMid(shape.HTMid).getLevel();
+            }
+            long truncated = shape.HTMid >> 2 * (pointLevel - indexLevel);
+            for (int i = 0; i < htmIdInfos.length; i++) {
+                if (htmIdInfos[i].htmId.getId() == truncated) {
+                    writeInternal(i, shape);
+                    break;
+                }
+            }
+        }
     }
 
     public void write(int hidIndex, HTMPoint shape) throws IOException {

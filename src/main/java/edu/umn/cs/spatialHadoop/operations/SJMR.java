@@ -58,7 +58,7 @@ import edu.umn.cs.spatialHadoop.util.Progressable;
  * S. Zhang, J. Han, Z. Liu, K. Wang, and Z. Xu. SJMR:
  * Parallelizing spatial join with MapReduce on clusters. In
  * CLUSTER, pages 1–8, New Orleans, LA, Aug. 2009.
- * The map function partitions data into grid htmIdInfos and the reduce function
+ * The map function partitions data into grid cells and the reduce function
  * makes a plane-sweep over each cell.
  * @author eldawy
  *
@@ -132,7 +132,7 @@ public class SJMR {
   }
   
   /**
-   * The map class maps each object to all htmIdInfos it overlaps with.
+   * The map class maps each object to all cells it overlaps with.
    * @author Ahmed Eldawy
    *
    */
@@ -195,7 +195,7 @@ public class SJMR {
   
   public static class SelfSJMRReduce<S extends Shape> extends MapReduceBase implements
   Reducer<IntWritable, S, S, S> {
-    /**List of htmIdInfos used by the reducer*/
+    /**List of cells used by the reducer*/
     private GridInfo grid;
 
     @Override
@@ -243,7 +243,7 @@ public class SJMR {
     /**Number of files in the input*/
     private int inputFileCount;
     
-    /**List of htmIdInfos used by the reducer*/
+    /**List of cells used by the reducer*/
     private GridInfo grid;
     private boolean inactiveMode;
 	private boolean isFilterOnly;
@@ -396,7 +396,7 @@ public class SJMR {
     int sjmrPartitioningGridFactor = params.getInt(PartitioiningFactor, 20);
     int num_cells = (int) Math.max(1, total_size * sjmrPartitioningGridFactor /
         outFs.getDefaultBlockSize(outputPath));
-    LOG.info("Number of htmIdInfos is configured to be " + num_cells);
+    LOG.info("Number of cells is configured to be " + num_cells);
 
     OperationsParams.setInactiveModeFlag(job, InactiveMode, isReduceInactive);
     OperationsParams.setJoiningThresholdPerOnce(job, JoiningThresholdPerOnce, joiningThresholdPerOnce);

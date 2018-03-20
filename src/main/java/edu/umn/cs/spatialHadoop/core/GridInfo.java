@@ -18,7 +18,7 @@ import edu.umn.cs.spatialHadoop.io.TextSerializerHelper;
 
 /**
  * Stores grid information that can be used with spatial files.
- * The grid is uniform which means all htmIdInfos have the same width and the same
+ * The grid is uniform which means all cells have the same width and the same
  * height.
  * @author Ahmed Eldawy
  *
@@ -143,7 +143,7 @@ public class GridInfo extends Rectangle {
   }
 
   /**
-   * Computes the range of all htmIdInfos that overlap a given rectangle
+   * Computes the range of all cells that overlap a given rectangle
    * @param rect
    * @return
    */

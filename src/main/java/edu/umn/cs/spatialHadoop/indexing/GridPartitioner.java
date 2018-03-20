@@ -70,7 +70,7 @@ public class GridPartitioner extends Partitioner {
     x = mbr.x1;
     y = mbr.y1;
     
-    // Start with a rough estimate for number of htmIdInfos assuming uniformity
+    // Start with a rough estimate for number of cells assuming uniformity
     numTiles = (int) Math.ceil(points.length / capacity);
     GridInfo gridInfo = new GridInfo(mbr.x1, mbr.y1, mbr.x2, mbr.y2);
 

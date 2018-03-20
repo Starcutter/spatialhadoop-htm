@@ -178,7 +178,7 @@ public class OperationsParams extends Configuration {
 	}
 
 	/*
-	 * public CellInfo[] getCells() { String cell_of = (String) get("htmIdInfos-of");
+	 * public CellInfo[] getCells() { String cell_of = (String) get("cells-of");
 	 * if (cell_of == null) return null; Path path = new Path(cell_of);
 	 * FileSystem fs; try { fs = path.getFileSystem(new Configuration()); return
 	 * SpatialSite.cellsOf(fs, path); } catch (IOException e) {
