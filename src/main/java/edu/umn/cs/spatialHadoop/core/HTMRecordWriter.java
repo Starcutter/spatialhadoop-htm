@@ -94,10 +94,10 @@ public class HTMRecordWriter {
      * Keeps the number of elements written to each cell so far.
      * Helps calculating the overhead of RTree indexing
      */
-    protected int[] intermediateCellRecordCount;
+    protected long[] intermediateCellRecordCount;
 
     /**Size in bytes of intermediate files written so far*/
-    protected int[] intermediateCellSize;
+    protected long[] intermediateCellSize;
 
 
     /**New line marker to separate records*/
@@ -161,14 +161,14 @@ public class HTMRecordWriter {
             intermediateCellStreams = new OutputStream[this.htmIdInfos.length];
             intermediateCellPath = new Path[this.htmIdInfos.length];
             // Initialize the counters for each cell
-            intermediateCellRecordCount = new int[this.htmIdInfos.length];
-            intermediateCellSize = new int[this.htmIdInfos.length];
+            intermediateCellRecordCount = new long[this.htmIdInfos.length];
+            intermediateCellSize = new long[this.htmIdInfos.length];
 
         } else {
             intermediateCellStreams = new OutputStream[1];
             intermediateCellPath = new Path[1];
-            intermediateCellSize = new int[1];
-            intermediateCellRecordCount = new int[1];
+            intermediateCellSize = new long[1];
+            intermediateCellRecordCount = new long[1];
         }
 
         this.pointLevel = -1;

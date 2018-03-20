@@ -80,11 +80,7 @@ public class RandomSpatialGenerator {
 
             // Set output path
             FileOutputFormat.setOutputPath(job, outFile);
-            if (sindex == null) {
-                job.setOutputFormat(HTMOutputFormat.class);
-            } else {
-                throw new RuntimeException("Unsupported spatial index: " + sindex);
-            }
+            job.setOutputFormat(HTMOutputFormat.class);
 
         } else {
             Rectangle mbr = params.getShape("mbr").getMBR();
@@ -183,11 +179,7 @@ public class RandomSpatialGenerator {
             }
 
             HTMRecordWriter writer;
-            if (sindex == null) {
-                writer = new HTMRecordWriter(outFile, job, null, htmIdInfos);
-            } else {
-                throw new RuntimeException("Unupoorted spatial idnex: " + sindex);
-            }
+            writer = new HTMRecordWriter(outFile, job, null, htmIdInfos);
 
             Rectangle mbr = new Rectangle(-90, -180, 90, 180);
 
@@ -275,7 +267,13 @@ public class RandomSpatialGenerator {
             System.exit(1);
         }
 
-        if (params.get("mbr") == null && !(params.getShape("shape") instanceof HTMPoint)) {
+        Shape shape = params.getShape("shape");
+
+        if (shape instanceof HTMPoint) {
+            params.set("sindex", "htm");
+        }
+
+        if (params.get("mbr") == null && !(shape instanceof HTMPoint)) {
             System.err.println("Set MBR of the generated file using rect:<x1,y1,x2,y2>");
             printUsage();
             System.exit(1);
