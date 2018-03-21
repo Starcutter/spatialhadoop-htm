@@ -305,7 +305,7 @@ public class HTMRecordWriter {
      * @throws IOException
      */
     protected void closeCell(int hidIndex) throws IOException {
-        HTMidInfo htmIdInfo = htmIdInfos[hidIndex];
+        HTMidInfo htmIdInfo = htmIdInfos != null ? htmIdInfos[hidIndex] : new HTMidInfo(0);
 
         closeCellBackground(intermediateCellPath[hidIndex],
                 getFinalCellPath(hidIndex), intermediateCellStreams[hidIndex],

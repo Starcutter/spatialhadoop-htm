@@ -14,17 +14,13 @@ import java.io.OutputStream;
 
 import edu.umn.cs.spatialHadoop.core.*;
 import edu.umn.cs.spatialHadoop.mapred.HTMOutputFormat;
-import edu.umn.cs.spatialHadoop.mapreduce.SpatialInputFormat3;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapred.ClusterStatus;
-import org.apache.hadoop.mapred.FileOutputFormat;
-import org.apache.hadoop.mapred.JobClient;
-import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.GenericOptionsParser;
 
 import edu.umn.cs.spatialHadoop.mapred.GridOutputFormat;
@@ -43,6 +39,19 @@ import edu.umn.cs.spatialHadoop.operations.Repartition.RepartitionReduce;
  */
 public class RandomSpatialGenerator {
 
+    public static class GenerateMapHTM extends MapReduceBase
+            implements Mapper<Rectangle, HTMPoint, IntWritable, HTMPoint> {
+
+        private IntWritable zero = new IntWritable(0);
+
+        @Override
+        public void map(Rectangle dummy, HTMPoint point,
+                        OutputCollector<IntWritable, HTMPoint> output, Reporter reporter)
+                throws IOException {
+            output.collect(zero, point);
+        }
+    }
+
     private static void generateMapReduce(Path outFile, OperationsParams params)
             throws IOException {
         JobConf job = new JobConf(params, RandomSpatialGenerator.class);
@@ -54,11 +63,6 @@ public class RandomSpatialGenerator {
         ClusterStatus clusterStatus = new JobClient(job).getClusterStatus();
         // Set input format and map class
         job.setInputFormat(RandomInputFormat.class);
-        if (shape instanceof HTMPoint) {
-            job.setMapperClass(Repartition.RepartitionMapHTM.class);
-        } else {
-            job.setMapperClass(Repartition.RepartitionMap.class);
-        }
         job.setMapOutputKeyClass(IntWritable.class);
         job.setMapOutputValueClass(shape.getClass());
         job.setNumMapTasks(10 * Math.max(1, clusterStatus.getMaxMapTasks()));
@@ -66,23 +70,16 @@ public class RandomSpatialGenerator {
         String sindex = params.get("sindex");
 
         if (shape instanceof HTMPoint) {
-            HTMidInfo[] htmIdInfos;
-            htmIdInfos = new HTMidInfo[8];
-            for (int i = 0; i < 8; i++) {
-                htmIdInfos[i] = new HTMidInfo(i + 8);
-            }
+            job.setMapperClass(GenerateMapHTM.class);
 
-            SpatialSite.setHTMids(job, htmIdInfos);
-
-            job.setReducerClass(Repartition.RepartitionReduceHTM.class);
-            job.setNumReduceTasks(Math.max(1, Math.min(htmIdInfos.length,
-                    (clusterStatus.getMaxReduceTasks() * 9 + 5) / 10)));
-
+            job.setNumMapTasks(0);
             // Set output path
             FileOutputFormat.setOutputPath(job, outFile);
             job.setOutputFormat(HTMOutputFormat.class);
 
         } else {
+            job.setMapperClass(Repartition.RepartitionMap.class);
+
             Rectangle mbr = params.getShape("mbr").getMBR();
 
             CellInfo[] cells;
@@ -135,23 +132,25 @@ public class RandomSpatialGenerator {
                 return path.getName().contains("_master");
             }
         });
-        String ext = resultFiles[0].getPath().getName()
-                .substring(resultFiles[0].getPath().getName().lastIndexOf('.'));
-        Path masterPath = new Path(outFile, "_master" + ext);
-        OutputStream destOut = outFs.create(masterPath);
-        byte[] buffer = new byte[4096];
-        for (FileStatus f : resultFiles) {
-            InputStream in = outFs.open(f.getPath());
-            int bytes_read;
-            do {
-                bytes_read = in.read(buffer);
-                if (bytes_read > 0)
-                    destOut.write(buffer, 0, bytes_read);
-            } while (bytes_read > 0);
-            in.close();
-            outFs.delete(f.getPath(), false);
+        if (resultFiles.length > 0) {
+            String ext = resultFiles[0].getPath().getName()
+                    .substring(resultFiles[0].getPath().getName().lastIndexOf('.'));
+            Path masterPath = new Path(outFile, "_master" + ext);
+            OutputStream destOut = outFs.create(masterPath);
+            byte[] buffer = new byte[4096];
+            for (FileStatus f : resultFiles) {
+                InputStream in = outFs.open(f.getPath());
+                int bytes_read;
+                do {
+                    bytes_read = in.read(buffer);
+                    if (bytes_read > 0)
+                        destOut.write(buffer, 0, bytes_read);
+                } while (bytes_read > 0);
+                in.close();
+                outFs.delete(f.getPath(), false);
+            }
+            destOut.close();
         }
-        destOut.close();
     }
 
 
@@ -172,14 +171,8 @@ public class RandomSpatialGenerator {
                 DistributionType.UNIFORM);
 
         if (shape instanceof HTMPoint) {
-            HTMidInfo[] htmIdInfos;
-            htmIdInfos = new HTMidInfo[8];
-            for (int i = 0; i < 8; i++) {
-                htmIdInfos[i] = new HTMidInfo(i + 8);
-            }
-
             HTMRecordWriter writer;
-            writer = new HTMRecordWriter(outFile, job, null, htmIdInfos);
+            writer = new HTMRecordWriter(outFile, job, null, null);
 
             Rectangle mbr = new Rectangle(-90, -180, 90, 180);
 
@@ -268,10 +261,6 @@ public class RandomSpatialGenerator {
         }
 
         Shape shape = params.getShape("shape");
-
-        if (shape instanceof HTMPoint) {
-            params.set("sindex", "htm");
-        }
 
         if (params.get("mbr") == null && !(shape instanceof HTMPoint)) {
             System.err.println("Set MBR of the generated file using rect:<x1,y1,x2,y2>");
