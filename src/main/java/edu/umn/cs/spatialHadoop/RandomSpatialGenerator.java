@@ -72,7 +72,7 @@ public class RandomSpatialGenerator {
         if (shape instanceof HTMPoint) {
             job.setMapperClass(GenerateMapHTM.class);
 
-            job.setNumMapTasks(0);
+            job.setNumReduceTasks(0);
             // Set output path
             FileOutputFormat.setOutputPath(job, outFile);
             job.setOutputFormat(HTMOutputFormat.class);
