@@ -121,7 +121,7 @@ public class Repartition {
          */
         private HTMidInfo[] htmIdInfos;
 
-        private int indexLevel = 0, pointLevel = -1;
+        private int indexLevel = 0, pointLevel = 20;
 
         /**
          * Used to output intermediate records
@@ -142,9 +142,11 @@ public class Repartition {
         public void map(Rectangle cellMbr, HTMPoint point,
                         OutputCollector<IntWritable, HTMPoint> output, Reporter reporter)
                 throws IOException {
+            /*
             if (pointLevel < 0) {
                 pointLevel = new HTMid(point.HTMid).getLevel();
             }
+            */
             long truncated = point.HTMid >> 2 * (pointLevel - indexLevel);
             for (int i = 0; i < htmIdInfos.length; i++) {
                 if (htmIdInfos[i].htmId.getId() == truncated) {
@@ -383,20 +385,22 @@ public class Repartition {
                 // Pack in rectangles using an RTree
                 cellInfos = packInRectangles(inFile, outPath, params);
             } else if (sindex.equals("htm")) {
-                /*
-                long inFileSize;
-                // TODO
+                FileSystem inFs = inFile.getFileSystem(params);
+                long inFileSize = inFs.getContentSummary(inFile).getLength();
+                LOG.info("Input file size: " + inFileSize / 1024 / 1024 / 1024 + "GB");
                 int num_partitions = calculateNumberOfPartitions(new Configuration(),
                         inFileSize, outFs, outPath, blockSize);
+                LOG.info("Number of partitions " + num_partitions);
                 if (num_partitions <= 8) {
                     num_partitions = 8;
                 } else if (num_partitions <= 32) {
                     num_partitions = 32;
-                } else {
+                } else if (num_partitions <= 128) {
                     num_partitions = 128;
+                } else {
+                    num_partitions = 512;
                 }
-                */
-                HTMInfo htmInfo = new HTMInfo(8);
+                HTMInfo htmInfo = new HTMInfo(num_partitions);
                 htmIdInfos = htmInfo.getAllHTMidInfos();
             } else {
                 throw new RuntimeException("Unsupported spatial index: " + sindex);

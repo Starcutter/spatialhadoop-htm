@@ -37,6 +37,16 @@ public class HTMInfo {
                 thirdIds[index++] = new HTMidInfo(secondIds[i].htmId.getChild(j));
             }
         }
-        return thirdIds;
+        if (this.num_partitions == 128) {
+            return thirdIds;
+        }
+        HTMidInfo[] fourthIds = new HTMidInfo[512];
+        index = 0;
+        for (int i = 0; i < 128; i++) {
+            for (int j = 0; j < 4; j++) {
+                fourthIds[index++] = new HTMidInfo(thirdIds[i].htmId.getChild(j));
+            }
+        }
+        return fourthIds;
     }
 }
