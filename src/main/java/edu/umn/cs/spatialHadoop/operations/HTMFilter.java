@@ -7,7 +7,9 @@ import edu.umn.cs.spatialHadoop.core.ResultCollector;
 import edu.umn.cs.spatialHadoop.indexing.PartitionHTM;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class HTMFilter {
     public HTMRanges ranges;
@@ -35,7 +37,9 @@ public class HTMFilter {
         }
     }
 
-    public boolean overlapsWith(HTMid htmId) {
+    public boolean overlapsWith(PartitionHTM partition, Map<String, String> filename2Ranges) {
+        HTMid htmId = partition.htmId;
+        String filename = partition.filename;
         int thatLevel = htmId.getLevel();
         long hid = htmId.getId();
 
@@ -48,11 +52,14 @@ public class HTMFilter {
                 long lb = pair.a;
                 long hb = pair.b;
                 if (lb <= hid && hid <= hb) {
+                    filename2Ranges.put(filename, String.valueOf(lb) + ',' + String.valueOf(hb));
                     return true;
                 }
             }
         } else {
             Pair<HTMid, HTMid> thatPair = htmId.extend(level);
+            boolean overlap = false;
+            StringBuilder rangesStr = new StringBuilder();
             for (Pair<Long, Long> pair : this.pairList) {
                 long lb = pair.a;
                 long hb = pair.b;
@@ -62,18 +69,31 @@ public class HTMFilter {
                         thatHb >= lb && thatHb <= hb ||
                         lb >= thatLb && lb <= thatHb ||
                         hb >= thatLb && hb <= thatHb) {
-                    return true;
+                    overlap = true;
+                    if (rangesStr.length() == 0) {
+                        rangesStr.append(lb);
+                        rangesStr.append(',');
+                        rangesStr.append(hb);
+                    } else {
+                        rangesStr.append(';');
+                        rangesStr.append(lb);
+                        rangesStr.append(',');
+                        rangesStr.append(hb);
+                    }
                 }
             }
+            filename2Ranges.put(filename, rangesStr.toString());
+            return overlap;
         }
         return false;
     }
 
     public void selectTrixels(List<PartitionHTM> pList,
+                              Map<String, String> filename2Ranges,
                               ResultCollector<PartitionHTM> output) {
         int numPartitions = 0;
         for (PartitionHTM partition : pList) {
-            if (overlapsWith(partition.htmId)) {
+            if (overlapsWith(partition, filename2Ranges)) {
                 output.collect(partition);
                 numPartitions++;
             }

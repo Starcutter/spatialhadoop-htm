@@ -177,7 +177,8 @@ public class HTMRecordReader<V extends Shape> extends
         }
         if (conf.get("ranges") != null) {
             // Retrieve the input query range to apply on all records
-            this.inputQueryRange = OperationsParams.getRanges(conf, "ranges");
+            //this.inputQueryRange = OperationsParams.getRanges(conf, "ranges");
+            this.inputQueryRange = OperationsParams.getRanges(conf, this.path.getName());
         }
 
         this.value = new ShapeIterator<V>();
