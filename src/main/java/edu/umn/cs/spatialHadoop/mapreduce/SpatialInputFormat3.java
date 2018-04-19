@@ -230,9 +230,11 @@ public class SpatialInputFormat3<K extends Rectangle, V extends Shape>
                 }
 
                 LOG.info("Spatial filter function matched with " + result.size() + " Trixels");
+                LOG.info("Original ranges num: " + jobConf.get("ranges").split(";").length);
                 for (FileStatus fileStatus : result) {
                     Path path = fileStatus.getPath();
                     LOG.info(path.getName());
+                    LOG.info("Ranges num: " + filename2Ranges.get(path.getName()).split(";").length);
                 }
                 return result;
 
