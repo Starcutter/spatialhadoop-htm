@@ -9,9 +9,7 @@
 package edu.umn.cs.spatialHadoop.mapreduce;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 
 import edu.umn.cs.spatialHadoop.indexing.PartitionHTM;
 import edu.umn.cs.spatialHadoop.operations.HTMFilter;
@@ -163,7 +161,8 @@ public class SpatialInputFormat3<K extends Rectangle, V extends Shape>
     }
 
     protected void listStatus(final FileSystem fs, Path dir,
-                              final List<FileStatus> result, HTMFilter filter) throws IOException {
+                              final List<FileStatus> result, HTMFilter filter,
+                              Map<String, String> filename2Ranges) throws IOException {
         List<PartitionHTM> pList = SpatialSite.getPartitionHTMs(fs, dir);
         if (pList == null || filter == null) {
             // No global index which means we cannot use the filter function
@@ -178,7 +177,7 @@ public class SpatialInputFormat3<K extends Rectangle, V extends Shape>
             for (FileStatus status : listStatus) {
                 if (status.isDir()) {
                     // Recursively go in subdir
-                    listStatus(fs, status.getPath(), result, filter);
+                    listStatus(fs, status.getPath(), result, filter, filename2Ranges);
                 } else {
                     // A file, just add it
                     result.add(status);
@@ -188,7 +187,8 @@ public class SpatialInputFormat3<K extends Rectangle, V extends Shape>
             final Path indexDir = OperationsParams.isWildcard(dir) ?
                     dir.getParent() : dir;
             // Use the global index to limit files
-            filter.selectTrixels(pList, new ResultCollector<PartitionHTM>() {
+            filter.selectTrixels(pList, filename2Ranges,
+                    new ResultCollector<PartitionHTM>() {
                 @Override
                 public void collect(PartitionHTM partition) {
                     try {
@@ -216,15 +216,25 @@ public class SpatialInputFormat3<K extends Rectangle, V extends Shape>
                 List<FileStatus> result = new ArrayList<FileStatus>();
                 Path[] inputDirs = getInputPaths(job);
 
+                Map<String, String> filename2Ranges = new HashMap<String, String>();
                 for (Path dir : inputDirs) {
                     FileSystem fs = dir.getFileSystem(jobConf);
-                    listStatus(fs, dir, result, htmFilter);
+                    listStatus(fs, dir, result, htmFilter, filename2Ranges);
+                }
+                Iterator entries = filename2Ranges.entrySet().iterator();
+                while (entries.hasNext()) {
+                    Map.Entry entry = (Map.Entry) entries.next();
+                    String filename = (String) entry.getKey();
+                    String rangesStr = (String) entry.getValue();
+                    jobConf.set(filename, rangesStr);
                 }
 
                 LOG.info("Spatial filter function matched with " + result.size() + " Trixels");
+                LOG.info("Original ranges num: " + jobConf.get("ranges").split(";").length);
                 for (FileStatus fileStatus : result) {
                     Path path = fileStatus.getPath();
                     LOG.info(path.getName());
+                    LOG.info("Ranges num: " + filename2Ranges.get(path.getName()).split(";").length);
                 }
                 return result;
 

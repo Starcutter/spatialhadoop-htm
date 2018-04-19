@@ -397,8 +397,10 @@ public class Repartition {
                     num_partitions = 32;
                 } else if (num_partitions <= 128) {
                     num_partitions = 128;
-                } else {
+                } else if (num_partitions <= 512) {
                     num_partitions = 512;
+                } else {
+                    num_partitions = 2048;
                 }
                 HTMInfo htmInfo = new HTMInfo(num_partitions);
                 htmIdInfos = htmInfo.getAllHTMidInfos();

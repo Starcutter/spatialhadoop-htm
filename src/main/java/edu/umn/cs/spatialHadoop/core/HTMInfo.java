@@ -20,29 +20,39 @@ public class HTMInfo {
         if (this.num_partitions == 8) {
             return topIds;
         }
-        HTMidInfo[] secondIds = new HTMidInfo[32];
+        HTMidInfo[] firstIds = new HTMidInfo[32];
         int index = 0;
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 4; j++) {
-                secondIds[index++] = new HTMidInfo(topIds[i].htmId.getChild(j));
+                firstIds[index++] = new HTMidInfo(topIds[i].htmId.getChild(j));
             }
         }
         if (this.num_partitions == 32) {
-            return secondIds;
+            return firstIds;
         }
-        HTMidInfo[] thirdIds = new HTMidInfo[128];
+        HTMidInfo[] secondIds = new HTMidInfo[128];
         index = 0;
         for (int i = 0; i < 32; i++) {
+            for (int j = 0; j < 4; j++) {
+                secondIds[index++] = new HTMidInfo(firstIds[i].htmId.getChild(j));
+            }
+        }
+        if (this.num_partitions == 128) {
+            return secondIds;
+        }
+        HTMidInfo[] thirdIds = new HTMidInfo[512];
+        index = 0;
+        for (int i = 0; i < 128; i++) {
             for (int j = 0; j < 4; j++) {
                 thirdIds[index++] = new HTMidInfo(secondIds[i].htmId.getChild(j));
             }
         }
-        if (this.num_partitions == 128) {
+        if (this.num_partitions == 512) {
             return thirdIds;
         }
-        HTMidInfo[] fourthIds = new HTMidInfo[512];
+        HTMidInfo[] fourthIds = new HTMidInfo[2048];
         index = 0;
-        for (int i = 0; i < 128; i++) {
+        for (int i = 0; i < 512; i++) {
             for (int j = 0; j < 4; j++) {
                 fourthIds[index++] = new HTMidInfo(thirdIds[i].htmId.getChild(j));
             }
