@@ -1,3 +1,39 @@
+# Spatial-HTM
+
+An extension of SpatialHadoop which is introduced below.
+
+Spatial-HTM exploits Hierarchical Triangular Mesh (HTM) to subdivide a sphere (see Szalay A S, Gray J, Fekete G, et al. Indexing the sphere with the hierarchical triangular mesh[J]. arXiv preprint cs/0701164, 2007). This method of subdivision leads to an indexing system, where the sphere is made up of hierarchical spherical triangles (called _Trixels_), and points are approximately represented by deep level Trixels. Every Trixel can be represented by a unique long integer named _HTMid._ Irregular queries is done efficiently by converting a convex query area to a set of Trixels and judging whether a point is inside the area using simple HTMid interval comparisons.
+
+## Compile
+
+```
+mvn assembly:assembly -Dmaven.test.skip=true
+```
+
+Target jar file: `target/spatialhadoop-2.4.3-SNAPSHOT-jar-with-dependencies.jar`. We refer to it as `spatialhadoop-htm.jar`
+
+## Examples
+
+Generate htmpoints data (latitude, longitude, HTMid):
+
+```
+hadoop jar spatialhadoop-htm.jar generate test.points size:1.gb shape:htmpoint
+```
+
+Index the data with HTM:
+
+```
+hadoop jar spatialhadoop-htm.jar oldindex test.points sindex:htm test.htm shape:htmpoint
+```
+
+Range query. Parameter `ranges` is followed by a set of HTMid intervals split by `;`
+
+```
+hadoop jar spatialhadoop-htm.jar rangequery test.htm ranges:3016,3016;3044,3044;3060,3060;3062,3063 test.out shape:htmpoint
+```
+
+
+
 SpatialHadoop
 =============
 
@@ -52,7 +88,7 @@ by the box with the two corners (10, 20) and (2000, 3000). Results are stored
 in the output file *rangequery.out*
 
     shadoop rangequery test.grid rect:10,10,2000,3000 rangequery.out shape:rect
-    
+
 Compile
 =======
 
@@ -62,7 +98,7 @@ First, you need to grab your own version of the source code. You can do this thr
 The source code resides on [github](http://github.com). To clone the repository, run the following command
 
     git clone https://github.com/aseldawy/spatialhadoop2.git
-    
+
 If you do not want to use git, you can still download it as a
 [single archive](https://github.com/aseldawy/spatialhadoop2/archive/master.zip) provided by github.
 
