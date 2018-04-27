@@ -11,6 +11,14 @@ import edu.umn.cs.spatialHadoop.io.TextSerializerHelper;
 public class HTMPoint extends Point {
     public long HTMid;
 
+    public HTMPoint() {
+    }
+
+    public HTMPoint(Point p, long HTMid) {
+        set(p.x, p.y);
+        this.HTMid = HTMid;
+    }
+
     public void write(DataOutput out) throws IOException {
         out.writeLong(HTMid);
         super.write(out);

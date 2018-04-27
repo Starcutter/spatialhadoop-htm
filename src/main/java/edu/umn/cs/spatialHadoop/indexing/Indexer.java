@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Vector;
 import java.util.ArrayList;
 
+import edu.umn.cs.spatialHadoop.core.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -40,11 +41,6 @@ import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.LineReader;
 
 import edu.umn.cs.spatialHadoop.OperationsParams;
-import edu.umn.cs.spatialHadoop.core.Point;
-import edu.umn.cs.spatialHadoop.core.Rectangle;
-import edu.umn.cs.spatialHadoop.core.ResultCollector;
-import edu.umn.cs.spatialHadoop.core.Shape;
-import edu.umn.cs.spatialHadoop.core.SpatialSite;
 import edu.umn.cs.spatialHadoop.indexing.IndexOutputFormat.IndexRecordWriter;
 import edu.umn.cs.spatialHadoop.io.Text2;
 import edu.umn.cs.spatialHadoop.mapreduce.RTreeRecordReader3;
@@ -91,6 +87,7 @@ public class Indexer {
         LocalIndexes = new HashMap<String, Class<? extends LocalIndexer>>();
         LocalIndexes.put("rtree", RTreeLocalIndexer.class);
         LocalIndexes.put("r+tree", RTreeLocalIndexer.class);
+        LocalIndexes.put("htm", HTMLocalIndexer.class);
     }
 
 
@@ -150,6 +147,36 @@ public class Indexer {
         }
     }
 
+    public static class PartitionerMapHTM extends
+            Mapper<Rectangle, Iterable<? extends Shape>, IntWritable, Shape> {
+
+        /**
+         * The partitioner used to partitioner the data across reducers
+         */
+        private PartitionerHTM partitioner;
+
+        @Override
+        protected void setup(Context context)
+                throws IOException, InterruptedException {
+            super.setup(context);
+            this.partitioner = PartitionerHTM.getPartitioner(context.getConfiguration());
+        }
+
+        @Override
+        protected void map(Rectangle key, Iterable<? extends Shape> shapes,
+                           final Context context) throws IOException,
+                InterruptedException {
+            final IntWritable partitionID = new IntWritable();
+            for (final Shape shape : shapes) {
+                partitionID.set(partitioner.overlapPartition(shape));
+                if (partitionID.get() >= 0) {
+                    context.write(partitionID, shape);
+                }
+                context.progress();
+            }
+        }
+    }
+
 
     public static class PartitionerReduce<S extends Shape>
             extends Reducer<IntWritable, Shape, IntWritable, Shape> {
@@ -174,41 +201,69 @@ public class Indexer {
         Job job = new Job(paramss, "Indexer");
         Configuration conf = job.getConfiguration();
         job.setJarByClass(Indexer.class);
+        String index = conf.get("sindex");
 
-        // Set input file MBR if not already set
-        Rectangle inputMBR = (Rectangle) OperationsParams.getShape(conf, "mbr");
-        if (inputMBR == null) {
-            inputMBR = FileMBR.fileMBR(inPath, new OperationsParams(conf));
-            OperationsParams.setShape(conf, "mbr", inputMBR);
+        if (!index.equals("htm")) {
+            // Set input file MBR if not already set
+            Rectangle inputMBR = (Rectangle) OperationsParams.getShape(conf, "mbr");
+            if (inputMBR == null) {
+                inputMBR = FileMBR.fileMBR(inPath, new OperationsParams(conf));
+                OperationsParams.setShape(conf, "mbr", inputMBR);
+            }
         }
 
         // Set the correct partitioner according to index type
-        String index = conf.get("sindex");
         if (index == null)
             throw new RuntimeException("Index type is not set");
         long t1 = System.currentTimeMillis();
         setLocalIndexer(conf, index);
-        Partitioner partitioner = createPartitioner(inPath, outPath, conf, index);
-        Partitioner.setPartitioner(conf, partitioner);
 
-        long t2 = System.currentTimeMillis();
-        System.out.println("Total time for space subdivision in millis: " + (t2 - t1));
+        if (!index.equals("htm")) {
+            Partitioner partitioner = createPartitioner(inPath, outPath, conf, index);
+            Partitioner.setPartitioner(conf, partitioner);
 
-        // Set mapper and reducer
-        Shape shape = OperationsParams.getShape(conf, "shape");
-        job.setMapperClass(PartitionerMap.class);
-        job.setMapOutputKeyClass(IntWritable.class);
-        job.setMapOutputValueClass(shape.getClass());
-        job.setReducerClass(PartitionerReduce.class);
-        // Set input and output
-        job.setInputFormatClass(SpatialInputFormat3.class);
-        SpatialInputFormat3.setInputPaths(job, inPath);
-        job.setOutputFormatClass(IndexOutputFormat.class);
-        IndexOutputFormat.setOutputPath(job, outPath);
-        // Set number of reduce tasks according to cluster status
-        ClusterStatus clusterStatus = new JobClient(new JobConf()).getClusterStatus();
-        job.setNumReduceTasks(Math.max(1, Math.min(partitioner.getPartitionCount(),
-                (clusterStatus.getMaxReduceTasks() * 9) / 10)));
+            long t2 = System.currentTimeMillis();
+            System.out.println("Total time for space subdivision in millis: " + (t2 - t1));
+
+            // Set mapper and reducer
+            Shape shape = OperationsParams.getShape(conf, "shape");
+            job.setMapperClass(PartitionerMap.class);
+            job.setMapOutputKeyClass(IntWritable.class);
+            job.setMapOutputValueClass(shape.getClass());
+            job.setReducerClass(PartitionerReduce.class);
+            // Set input and output
+            job.setInputFormatClass(SpatialInputFormat3.class);
+            SpatialInputFormat3.setInputPaths(job, inPath);
+            job.setOutputFormatClass(IndexOutputFormat.class);
+            IndexOutputFormat.setOutputPath(job, outPath);
+            // Set number of reduce tasks according to cluster status
+            ClusterStatus clusterStatus = new JobClient(new JobConf()).getClusterStatus();
+            job.setNumReduceTasks(Math.max(1, Math.min(partitioner.getPartitionCount(),
+                    (clusterStatus.getMaxReduceTasks() * 9) / 10)));
+        } else {
+            PartitionerHTM partitionerHTM = createPartitionerHTM(inPath, outPath, conf);
+            PartitionerHTM.setPartitioner(conf, partitionerHTM);
+
+            long t2 = System.currentTimeMillis();
+            System.out.println("Total time for partitioning in millis: " + (t2 - t1));
+
+            // Set mapper and reducer
+            Shape shape = OperationsParams.getShape(conf, "shape");
+            job.setMapperClass(PartitionerMapHTM.class);
+            job.setMapOutputKeyClass(IntWritable.class);
+            job.setMapOutputValueClass(shape.getClass());
+            job.setReducerClass(PartitionerReduce.class);
+
+            job.setInputFormatClass(SpatialInputFormat3.class);
+            SpatialInputFormat3.setInputPaths(job, inPath);
+            // TODO: change OutputFormat
+            job.setOutputFormatClass(IndexOutputFormat.class);
+            IndexOutputFormat.setOutputPath(job, outPath);
+            // Set number of reduce tasks according to cluster status
+            ClusterStatus clusterStatus = new JobClient(new JobConf()).getClusterStatus();
+            job.setNumReduceTasks(Math.max(1, Math.min(partitionerHTM.getPartitionCount(),
+                    (clusterStatus.getMaxReduceTasks() * 9) / 10)));
+        }
 
         // Use multithreading in case the job is running locally
         conf.setInt(LocalJobRunner.LOCAL_MAX_MAPS, Runtime.getRuntime().availableProcessors());
@@ -226,7 +281,7 @@ public class Indexer {
     /**
      * Set the local indexer for the given job configuration.
      *
-     * @param job
+     * @param conf
      * @param sindex
      */
     private static void setLocalIndexer(Configuration conf, String sindex) {
@@ -238,6 +293,93 @@ public class Indexer {
     public static Partitioner createPartitioner(Path in, Path out,
                                                 Configuration job, String partitionerName) throws IOException {
         return createPartitioner(new Path[]{in}, out, job, partitionerName);
+    }
+
+    public static PartitionerHTM createPartitionerHTM(Path in, Path out,
+                                                Configuration job) throws IOException {
+        return createPartitionerHTM(new Path[]{in}, out, job);
+    }
+
+    /**
+     * Create a partitioner for a particular job
+     *
+     * @param ins
+     * @param out
+     * @param job
+     * @return
+     * @throws IOException
+     */
+    public static PartitionerHTM createPartitionerHTM(Path[] ins, Path out,
+                                                Configuration job) throws IOException {
+        try {
+            PartitionerHTM partitioner;
+            Class<? extends PartitionerHTM> partitionerClass = PartitionerHTM.class;
+
+            partitioner = partitionerClass.newInstance();
+
+            long t1 = System.currentTimeMillis();
+            // Determine number of partitions
+            long inSize = 0;
+            for (Path in : ins) {
+                inSize += FileUtil.getPathSize(in.getFileSystem(job), in);
+            }
+            LOG.info("Input file size: " + inSize / 1024.0 / 1024.0 / 1024.0 + "GB");
+            long estimatedOutSize = (long) (inSize * (1.0 + job.getFloat(SpatialSite.INDEXING_OVERHEAD, 0.1f)));
+            FileSystem outFS = out.getFileSystem(job);
+            long outBlockSize = outFS.getDefaultBlockSize(out);
+            int num_partitions = (int) Math.ceil((float) estimatedOutSize / outBlockSize);
+            if (num_partitions <= 8) {
+                num_partitions = 8;
+            } else if (num_partitions <= 32) {
+                num_partitions = 32;
+            } else if (num_partitions <= 128) {
+                num_partitions = 128;
+            } else if (num_partitions <= 512) {
+                num_partitions = 512;
+            } else {
+                num_partitions = 2048;
+            }
+            LOG.info("Preliminarily set partition number = " + num_partitions);
+            HTMInfo htmInfo = new HTMInfo(num_partitions);
+            HTMidInfo[] htmIdInfos = htmInfo.getAllHTMidInfos();
+
+            final List<Point> sample = new ArrayList<Point>();
+            float sample_ratio = job.getFloat(SpatialSite.SAMPLE_RATIO, 0.01f);
+            long sample_size = job.getLong(SpatialSite.SAMPLE_SIZE, 100 * 1024 * 1024);
+
+            LOG.info("Reading a sample of " + (int) Math.round(sample_ratio * 100) + "%");
+            ResultCollector<Point> resultCollector = new ResultCollector<Point>() {
+                @Override
+                public void collect(Point p) {
+                    sample.add(p.clone());
+                }
+            };
+
+            OperationsParams params2 = new OperationsParams(job);
+            params2.setFloat("ratio", sample_ratio);
+            params2.setLong("size", sample_size);
+            if (job.get("shape") != null)
+                params2.set("shape", job.get("shape"));
+            if (job.get("local") != null)
+                params2.set("local", job.get("local"));
+            params2.setClass("outshape", Point.class, Shape.class);
+            Sampler.sample(ins, resultCollector, params2);
+            long t2 = System.currentTimeMillis();
+            System.out.println("Total time for sampling in millis: " + (t2 - t1));
+            LOG.info("Finished reading a sample of " + sample.size() + " records");
+
+
+            partitioner.createFromPoints(htmIdInfos, sample.toArray(new Point[sample.size()]),
+                    estimatedOutSize, outBlockSize);
+
+            return partitioner;
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+            return null;
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     /**
@@ -426,7 +568,8 @@ public class Indexer {
 
     public static Job index(Path inPath, Path outPath, OperationsParams params)
             throws IOException, InterruptedException, ClassNotFoundException {
-        if (OperationsParams.isLocal(new JobConf(params), inPath)) {
+        if (OperationsParams.isLocal(new JobConf(params), inPath)
+                && !params.get("sindex").equals("htm")) {
             indexLocal(inPath, outPath, params);
             return null;
         } else {
