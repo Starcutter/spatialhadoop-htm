@@ -256,8 +256,7 @@ public class Indexer {
 
             job.setInputFormatClass(SpatialInputFormat3.class);
             SpatialInputFormat3.setInputPaths(job, inPath);
-            // TODO: change OutputFormat
-            job.setOutputFormatClass(IndexOutputFormat.class);
+            job.setOutputFormatClass(IndexOutputFormatHTM.class);
             IndexOutputFormat.setOutputPath(job, outPath);
             // Set number of reduce tasks according to cluster status
             ClusterStatus clusterStatus = new JobClient(new JobConf()).getClusterStatus();

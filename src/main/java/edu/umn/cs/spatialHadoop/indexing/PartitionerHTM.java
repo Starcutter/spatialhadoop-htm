@@ -30,7 +30,7 @@ public class PartitionerHTM implements Writable {
     private static final String PartitionerClass = "Partitioner.Class";
     private static final String PartitionerValue = "Partitioner.Value";
 
-    private int pointLevel = 20;
+    public static final int pointLevel = 10;
     private HTM htm = HTM.getInstance();
     private HTMidInfo[] htmIdInfos;
 
@@ -172,10 +172,10 @@ public class PartitionerHTM implements Writable {
     public int overlapPartition(Shape shape) {
         Point p = (Point) shape;
         int i = 0;
+        long pointId = htm.Cartesian2HTMid(Latlon2Cartesian.parse(p.x, p.y), pointLevel).getId();
         for (HTMidInfo hidInfo : this.htmIdInfos) {
             HTMid partitionId = hidInfo.htmId;
-            long pointId = htm.Cartesian2HTMid(Latlon2Cartesian.parse(p.x, p.y), pointLevel).getId();
-            long truncated = pointId >> (2 * pointLevel - partitionId.getLevel());
+            long truncated = pointId >> (2 * (pointLevel - partitionId.getLevel()));
             if (truncated == partitionId.getId()) {
                 return i;
             }
@@ -242,13 +242,25 @@ public class PartitionerHTM implements Writable {
         return this.htmIdInfos.length;
     }
 
+    public HTMidInfo getHTMidInfo(int id) {
+        return htmIdInfos[id];
+    }
+
     @Override
     public void write(DataOutput out) throws IOException {
-
+        out.writeInt(this.htmIdInfos.length);
+        for (HTMidInfo htmIdInfo : this.htmIdInfos) {
+            out.writeLong(htmIdInfo.htmId.getId());
+        }
     }
 
     @Override
     public void readFields(DataInput in) throws IOException {
-
+        int len = in.readInt();
+        this.htmIdInfos = new HTMidInfo[len];
+        for (int i = 0; i < len; i++) {
+            long hid = in.readLong();
+            this.htmIdInfos[i] = new HTMidInfo(hid);
+        }
     }
 }
