@@ -8,17 +8,22 @@
  *************************************************************************/
 package edu.umn.cs.spatialHadoop.mapreduce;
 
+import java.io.DataInput;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import cn.edu.tsinghua.cs.htm.HTM;
 import cn.edu.tsinghua.cs.htm.utils.HTMRanges;
 import cn.edu.tsinghua.cs.htm.utils.HTMid;
+import cn.edu.tsinghua.cs.htm.utils.Latlon2Cartesian;
 import cn.edu.tsinghua.cs.htm.utils.Pair;
-import edu.umn.cs.spatialHadoop.core.HTMPoint;
+import edu.umn.cs.spatialHadoop.core.*;
 import edu.umn.cs.spatialHadoop.indexing.PartitionHTM;
+import edu.umn.cs.spatialHadoop.indexing.PartitionerHTM;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -44,9 +49,6 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.util.LineReader;
 
 import edu.umn.cs.spatialHadoop.OperationsParams;
-import edu.umn.cs.spatialHadoop.core.Rectangle;
-import edu.umn.cs.spatialHadoop.core.Shape;
-import edu.umn.cs.spatialHadoop.core.SpatialSite;
 import edu.umn.cs.spatialHadoop.indexing.GlobalIndex;
 import edu.umn.cs.spatialHadoop.indexing.Partition;
 
@@ -90,6 +92,10 @@ public class HTMRecordReader<V extends Shape> extends
 
     /**The shape used to parse input lines*/
     private V stockShape;
+
+    private int numChild;
+
+    private int[] childRecordCnt;
 
     private Text tempLine;
 
@@ -166,8 +172,8 @@ public class HTMRecordReader<V extends Shape> extends
             progressPosition = directIn;
         }
         this.stockShape = (V) OperationsParams.getShape(conf, "shape");
-        this.tempLine = new Text();
 
+        this.tempLine = new Text();
         this.lineReader = new LineReader(in);
         bytesRead = 0;
 
@@ -175,6 +181,18 @@ public class HTMRecordReader<V extends Shape> extends
             // Skip until first end-of-line reached
             bytesRead += lineReader.readLine(tempLine);
         }
+
+        if (!(this.stockShape instanceof HTMPoint)) {
+            DataInput din = new DataInputStream(in);
+            this.numChild = din.readInt();
+            bytesRead += 4;
+            this.childRecordCnt = new int[this.numChild];
+            for (int i = 0; i < this.numChild; i++) {
+                this.childRecordCnt[i] = din.readInt();
+                bytesRead += 4;
+            }
+        }
+
         if (conf.get("ranges") != null) {
             // Retrieve the input query range to apply on all records
             //this.inputQueryRange = OperationsParams.getRanges(conf, "ranges");
@@ -233,7 +251,15 @@ public class HTMRecordReader<V extends Shape> extends
             return false;
         if (inputQueryRange == null)
             return true;
-        long id = ((HTMPoint)shape).HTMid;
+        long id = 0;
+        if (shape instanceof HTMPoint) {
+            id = ((HTMPoint) shape).HTMid;
+        } else {
+            Point p = ((Point) shape);
+            id = HTM.getInstance().Cartesian2HTMid(
+                    Latlon2Cartesian.parse(p.x, p.y), PartitionerHTM.pointLevel
+            ).getId();
+        }
         if (this.pairList == null) {
             extendRanges(new HTMid(id).getLevel());
         }
@@ -355,8 +381,6 @@ public class HTMRecordReader<V extends Shape> extends
         }
 
         public boolean hasNext() {
-            if (nextShape == null)
-                return false;
             return nextShape != null;
         }
 

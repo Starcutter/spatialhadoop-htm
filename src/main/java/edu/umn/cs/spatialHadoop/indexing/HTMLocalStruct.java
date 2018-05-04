@@ -51,7 +51,7 @@ public class HTMLocalStruct {
         List<List<Integer>> childStartPosList = new ArrayList<List<Integer>>();
         List<List<Integer>> childLineLenList = new ArrayList<List<Integer>>();
         for (int i = 0; i < numChild; i++) {
-            childHTMids[i] = new HTMid(parentHid << (2 * localDepth) + i);
+            childHTMids[i] = new HTMid((parentHid << (2 * localDepth)) + i);
             childStartPosList.add(new ArrayList<Integer>());
             childLineLenList.add(new ArrayList<Integer>());
         }
@@ -78,6 +78,7 @@ public class HTMLocalStruct {
             i_start = i_end;
         }
 
+        dataOut.writeInt(numChild);
         for (int i = 0; i < numChild; i++) {
             int pointNum = childStartPosList.get(i).size();
             dataOut.writeInt(pointNum);

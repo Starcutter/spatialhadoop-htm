@@ -193,6 +193,7 @@ public class IndexOutputFormatHTM<S extends Shape>
                         if (localIndexer != null) {
                             // Build a local index for that file
                             try {
+                                LOG.info("tempFile " + id + ", length=" + tempFile.length());
                                 Path indexedFilePath = getPartitionFile(id);
                                 partitionInfo.filename = indexedFilePath.getName();
                                 localIndexer.buildLocalIndex(tempFile, indexedFilePath, shape);
