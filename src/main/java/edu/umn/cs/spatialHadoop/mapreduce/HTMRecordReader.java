@@ -99,6 +99,8 @@ public class HTMRecordReader<V extends Shape> extends
 
     private long[] childOffset;
 
+    private int nextChild;
+
     private Text tempLine;
 
     private HTMRanges inputQueryRange;
@@ -193,8 +195,9 @@ public class HTMRecordReader<V extends Shape> extends
             for (int i = 0; i < this.numChild; i++) {
                 this.childHTMid[i] = new HTMid(din.readLong());
                 this.childOffset[i] = din.readLong();
-                bytesRead += 8;
+                bytesRead += 16;
             }
+            this.nextChild = 0;
         }
 
         if (conf.get("ranges") != null) {
@@ -285,6 +288,30 @@ public class HTMRecordReader<V extends Shape> extends
         }
     }
 
+    protected boolean queryIntersectsWithChild(int childIndex) {
+        HTMid childId = this.childHTMid[childIndex];
+        List<Pair<HTMid, HTMid> > pairList = inputQueryRange.getPairList();
+        int pairLevel = pairList.get(0).a.getLevel();
+        if (childId.getLevel() < pairLevel) {
+            Pair<HTMid, HTMid> childPair = childId.extend(pairLevel);
+            long childLb = childPair.a.getId();
+            long childHb = childPair.b.getId();
+            for (Pair<HTMid, HTMid> pair : pairList) {
+                long lb = pair.a.getId();
+                long hb = pair.b.getId();
+                if (childLb >= lb && childLb <= hb ||
+                        childHb >= lb && childHb <= hb ||
+                        lb >= childLb && lb <= childHb ||
+                        hb >= childLb && hb <= childHb) {
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            return this.inputQueryRange.contains(childId);
+        }
+    }
+
     /**
      * Reads next shape from input and returns true. If no more shapes are left
      * in the split, a false is returned. This function first reads a line
@@ -296,12 +323,47 @@ public class HTMRecordReader<V extends Shape> extends
      * @throws IOException If an error happens while reading from disk
      */
     protected boolean nextShape(V s) throws IOException {
-        do {
-            if (!nextLine(tempLine))
-                return false;
-            s.fromText(tempLine);
-        } while (!isMatched(s));
-        return true;
+        if (this.stockShape instanceof HTMPoint) {
+            do {
+                if (!nextLine(tempLine))
+                    return false;
+                s.fromText(tempLine);
+            } while (!isMatched(s));
+            return true;
+        } else {
+
+            if (this.nextChild < this.numChild &&
+                    start + bytesRead >= this.childOffset[this.nextChild]) {
+                while (!queryIntersectsWithChild(this.nextChild)) {
+                    if (this.nextChild == this.numChild - 1) {
+                        return false;
+                    }
+                    this.nextChild++;
+                    bytesRead = this.childOffset[this.nextChild] - start;
+                    directIn.seek(this.childOffset[this.nextChild]);
+                    in = directIn;
+                }
+                this.nextChild++;
+                lineReader = new LineReader(in);
+            }
+            long nextOffset = this.nextChild < this.numChild ?
+                    this.childOffset[this.nextChild] :
+                    this.end;
+            boolean matched = false;
+            while (start + bytesRead < nextOffset) {
+                if (!nextLine(tempLine)) {
+                    return false;
+                }
+                //LOG.info(tempLine);
+                s.fromText(tempLine);
+                if (isMatched(s)) {
+                    matched = true;
+                    break;
+                }
+            }
+            return matched;
+
+        }
     }
 
     @Override
