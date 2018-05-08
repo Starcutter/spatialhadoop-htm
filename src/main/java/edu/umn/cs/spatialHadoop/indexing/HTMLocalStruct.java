@@ -78,10 +78,26 @@ public class HTMLocalStruct {
             i_start = i_end;
         }
 
-        dataOut.writeInt(numChild);
+        List<Long> childLenSums = new ArrayList<Long>();
         for (int i = 0; i < numChild; i++) {
-            int pointNum = childStartPosList.get(i).size();
-            dataOut.writeInt(pointNum);
+            List<Integer> childLineLen = childLineLenList.get(i);
+            long sum = 0L;
+            for (int l : childLineLen) {
+                sum += l + NEW_LINE.length;
+            }
+            childLenSums.add(sum);
+        }
+
+
+        dataOut.writeLong(parentHid);
+        dataOut.writeInt(numChild);
+        long bytesCnt = 0L;
+        bytesCnt += 8 + 4 + 8 * numChild;
+        for (int i = 0; i < numChild; i++) {
+            //int pointNum = childStartPosList.get(i).size();
+            //dataOut.writeInt(pointNum);
+            dataOut.writeLong(bytesCnt);
+            bytesCnt += childLenSums.get(i);
         }
         for (int i = 0; i < numChild; i++) {
             List<Integer> childStartPos = childStartPosList.get(i);
