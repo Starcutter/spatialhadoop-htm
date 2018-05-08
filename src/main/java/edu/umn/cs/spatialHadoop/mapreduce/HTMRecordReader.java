@@ -93,7 +93,7 @@ public class HTMRecordReader<V extends Shape> extends
     /**The shape used to parse input lines*/
     private V stockShape;
 
-    private HTMid parentHTMid;
+    private HTMid[] childHTMid;
 
     private int numChild;
 
@@ -186,11 +186,12 @@ public class HTMRecordReader<V extends Shape> extends
 
         if (!(this.stockShape instanceof HTMPoint)) {
             DataInput din = new DataInputStream(in);
-            this.parentHTMid = new HTMid(din.readLong());
             this.numChild = din.readInt();
-            bytesRead += 8 + 4;
+            this.childHTMid = new HTMid[this.numChild];
+            bytesRead += 4;
             this.childOffset = new long[this.numChild];
             for (int i = 0; i < this.numChild; i++) {
+                this.childHTMid[i] = new HTMid(din.readLong());
                 this.childOffset[i] = din.readLong();
                 bytesRead += 8;
             }

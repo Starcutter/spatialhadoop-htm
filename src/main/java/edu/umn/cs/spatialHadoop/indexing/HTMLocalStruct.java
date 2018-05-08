@@ -89,13 +89,13 @@ public class HTMLocalStruct {
         }
 
 
-        dataOut.writeLong(parentHid);
         dataOut.writeInt(numChild);
         long bytesCnt = 0L;
-        bytesCnt += 8 + 4 + 8 * numChild;
+        bytesCnt += 4 + 16 * numChild;
         for (int i = 0; i < numChild; i++) {
             //int pointNum = childStartPosList.get(i).size();
             //dataOut.writeInt(pointNum);
+            dataOut.writeLong(childHTMids[i].getId());
             dataOut.writeLong(bytesCnt);
             bytesCnt += childLenSums.get(i);
         }
