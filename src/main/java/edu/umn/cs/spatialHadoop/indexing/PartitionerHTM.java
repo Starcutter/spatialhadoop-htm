@@ -170,9 +170,8 @@ public class PartitionerHTM implements Writable {
     }
 
     public int overlapPartition(Shape shape) {
-        Point p = (Point) shape;
+        long pointId = ((HTMPoint) shape).HTMid;
         int i = 0;
-        long pointId = htm.Cartesian2HTMid(Latlon2Cartesian.parse(p.x, p.y), pointLevel).getId();
         for (HTMidInfo hidInfo : this.htmIdInfos) {
             HTMid partitionId = hidInfo.htmId;
             long truncated = pointId >> (2 * (pointLevel - partitionId.getLevel()));

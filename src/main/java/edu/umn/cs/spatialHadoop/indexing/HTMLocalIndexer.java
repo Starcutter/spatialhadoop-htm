@@ -45,7 +45,6 @@ public class HTMLocalIndexer implements LocalIndexer {
             // Create the output file
             FileSystem outFS = outputIndexedFile.getFileSystem(conf);
             DataOutputStream cellStream = outFS.create(outputIndexedFile);
-            LOG.info("created outputIndexedFile");
             HTMLocalStruct.bulkLoadWrite(cellData, 0, cellData.length,
                     hid, cellStream, shape.clone());
             cellStream.close();

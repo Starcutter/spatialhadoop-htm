@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.Vector;
 import java.util.ArrayList;
 
+import cn.edu.tsinghua.cs.htm.HTM;
+import cn.edu.tsinghua.cs.htm.utils.Latlon2Cartesian;
 import edu.umn.cs.spatialHadoop.core.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -154,12 +156,16 @@ public class Indexer {
          * The partitioner used to partitioner the data across reducers
          */
         private PartitionerHTM partitioner;
+        private HTM htm;
+        private int pointLevel;
 
         @Override
         protected void setup(Context context)
                 throws IOException, InterruptedException {
             super.setup(context);
             this.partitioner = PartitionerHTM.getPartitioner(context.getConfiguration());
+            this.htm = HTM.getInstance();
+            this.pointLevel = PartitionerHTM.pointLevel;
         }
 
         @Override
@@ -168,9 +174,12 @@ public class Indexer {
                 InterruptedException {
             final IntWritable partitionID = new IntWritable();
             for (final Shape shape : shapes) {
-                partitionID.set(partitioner.overlapPartition(shape));
+                Point p = (Point) shape;
+                long pointId = htm.Cartesian2HTMid(Latlon2Cartesian.parse(p.x, p.y), pointLevel).getId();
+                HTMPoint htmPoint = new HTMPoint(p, pointId);
+                partitionID.set(partitioner.overlapPartition(htmPoint));
                 if (partitionID.get() >= 0) {
-                    context.write(partitionID, shape);
+                    context.write(partitionID, htmPoint);
                 }
                 context.progress();
             }
@@ -251,7 +260,11 @@ public class Indexer {
             Shape shape = OperationsParams.getShape(conf, "shape");
             job.setMapperClass(PartitionerMapHTM.class);
             job.setMapOutputKeyClass(IntWritable.class);
-            job.setMapOutputValueClass(shape.getClass());
+            if (shape instanceof Point) {
+                job.setMapOutputValueClass(HTMPoint.class);
+            } else {
+                job.setMapOutputValueClass(shape.getClass());
+            }
             job.setReducerClass(PartitionerReduce.class);
 
             job.setInputFormatClass(SpatialInputFormat3.class);

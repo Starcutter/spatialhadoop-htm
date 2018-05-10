@@ -97,7 +97,7 @@ public class HTMRecordReader<V extends Shape> extends
 
     private int numChild;
 
-    private long[] childOffset;
+    private int[] childOffset;
 
     private int nextChild;
 
@@ -191,11 +191,11 @@ public class HTMRecordReader<V extends Shape> extends
             this.numChild = din.readInt();
             this.childHTMid = new HTMid[this.numChild];
             bytesRead += 4;
-            this.childOffset = new long[this.numChild];
+            this.childOffset = new int[this.numChild];
             for (int i = 0; i < this.numChild; i++) {
                 this.childHTMid[i] = new HTMid(din.readLong());
-                this.childOffset[i] = din.readLong();
-                bytesRead += 16;
+                this.childOffset[i] = din.readInt();
+                bytesRead += 12;
             }
             this.nextChild = 0;
         }
@@ -354,7 +354,7 @@ public class HTMRecordReader<V extends Shape> extends
                 if (!nextLine(tempLine)) {
                     return false;
                 }
-                //LOG.info(tempLine);
+//                LOG.info(tempLine);
                 s.fromText(tempLine);
                 if (isMatched(s)) {
                     matched = true;
