@@ -51,9 +51,12 @@ public class HTMLocalStruct {
                                      long parentHid,
                                      DataOutput dataOut, final Shape stockObject) throws IOException {
         int numChild = 1 << (2 * localDepth);
-        HTMid childHTMids[] = new HTMid[numChild];
+        long childHids[] = new long[numChild];
+        int childDepths[] = new int[numChild];
         for (int i = 0; i < numChild; i++) {
-            childHTMids[i] = new HTMid((parentHid << (2 * localDepth)) + i);
+            HTMid childHTMid = new HTMid((parentHid << (2 * localDepth)) + i);
+            childHids[i] = childHTMid.getId();
+            childDepths[i] = childHTMid.getLevel();
         }
 
         int childLen[] = new int[numChild];
@@ -85,9 +88,8 @@ public class HTMLocalStruct {
             recordHid[cnt] = ((HTMPoint) stockObject).HTMid;
 
             for (int i = 0; i < numChild; i++) {
-                HTMid childHTMid = childHTMids[i];
-                long truncated = recordHid[cnt] >> (2 * (pointLevel - childHTMid.getLevel()));
-                if (truncated == childHTMid.getId()) {
+                long truncated = recordHid[cnt] >> (2 * (pointLevel - childDepths[i]));
+                if (truncated == childHids[i]) {
                     childLen[i] += i_end - i_start - 1 - idLen + NEW_LINE.length;
                     break;
                 }
@@ -112,6 +114,7 @@ public class HTMLocalStruct {
 
         cnt = 0;
         i_start = offset;
+
         while (i_start < offset + len) {
             int i_end = skipToEOL(element_bytes, i_start);
             line.set(element_bytes, i_start, i_end - i_start - 1);
@@ -120,9 +123,8 @@ public class HTMLocalStruct {
             long pointId = recordHid[cnt];
 
             for (int i = 0; i < numChild; i++) {
-                HTMid childHTMid = childHTMids[i];
-                long truncated = pointId >> (2 * (pointLevel - childHTMid.getLevel()));
-                if (truncated == childHTMid.getId()) {
+                long truncated = pointId >> (2 * (pointLevel - childDepths[i]));
+                if (truncated == childHids[i]) {
                     System.arraycopy(element_bytes, i_start + idLen, content, childPtr[i],
                             i_end - i_start - 1 - idLen);
                     childPtr[i] += i_end - i_start - 1 - idLen;
@@ -141,11 +143,19 @@ public class HTMLocalStruct {
         int bytesCnt = 0;
         bytesCnt += 4 + 12 * numChild;
         for (int i = 0; i < numChild; i++) {
-            dataOut.writeLong(childHTMids[i].getId());
+            dataOut.writeLong(childHids[i]);
             dataOut.writeInt(bytesCnt);
             bytesCnt += childLen[i];
         }
-        LOG.info(bytesCnt - 4 - 12 * numChild);
-        dataOut.write(content, 0, sum);
+        LOG.info(sum);
+
+        i_start = 0;
+        cnt = 1;
+        while (i_start < sum) {
+            int i_end = skipToEOL(content, i_start);
+            dataOut.write(content, i_start, i_end - i_start);
+            i_start = i_end;
+            cnt++;
+        }
     }
 }
